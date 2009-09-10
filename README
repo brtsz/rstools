@@ -1,0 +1,20 @@
+=======================================
+rsfetch -- Simple Rapidshare downloader
+=======================================
+
+
+How to use it
+=============
+
+tty1$ cat >to-download.rs
+URL1
+URL2
+# this rocks!
+URL3
+^D
+
+tty2$ ssh -o 'Compression no' -c blowfish-cbc -D8009 user@host
+tty1$ rsfetch -sp5 localhost:8009 -r 100K to-download.rs
+
+
+.. vim: set ft=rst:

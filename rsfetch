@@ -1,0 +1,110 @@
+#!/bin/sh
+#
+# rsfetch -- Simple tool for batch downloads from Rapidshare.
+#
+# Copyright (C) 2008-2009 Barosz Oler <bartosz@bzimage.us>
+#
+
+set -e
+
+VERSION="0.4.0dev"
+CONFIG_FILE="$HOME/.config/rsfetch.rc"
+
+
+usage() {
+    cat <<EOF
+Usage: $(basename $0) [-r rate] [-ps5 host:port] <file>
+
+The file is a path to a file with list of links to be downloaded. Format of
+the file is one link per line. Lines starting with # are ignored.
+
+Options:
+
+    -r rate         Maximum allowed download rate expressed as bytes per
+		    second. Examples: 1.5k, 20k, 1m. If rate is not given,
+		    all available bandwidth will be used.
+
+    -ps5 host:port  SOCKS 5 proxy host and port.
+
+Enjoy!
+
+This is $(basename $0) v$VERSION. Report any bugs to <bartosz@bzimage.us>.
+EOF
+
+    exit 1
+}
+
+while test $# != 0
+do
+        case "$1" in
+        -r)
+                shift; rate_limit=$1 ;;
+        -ps5)
+                shift; socks5_proxy=$1 ;;
+        *)
+		dl_list=$1 ;;
+        esac
+        shift
+done
+
+if [ "x$dl_list" = "x" ]; then usage; fi
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    config_dir="$(dirname $CONFIG_FILE)"
+    mkdir -p "$config_dir"
+    cat <<EOF >"$CONFIG_FILE"
+# rsfetch.rc -- Rapidshare downloader configuration file.
+
+#
+# Your Rapidshare cookie.
+#
+# This cookie is used for authentication to your Rapidshare account.
+# Make sure it is correct.
+#
+RS_COOKIE=""
+
+EOF
+
+chmod 640 "$CONFIG_FILE"
+
+    cat <<EOF
+Config file not found: $CONFIG_FILE
+This file has just been automatically created, but you still have to
+edit it and set correct value of option RS_COOKIE.
+EOF
+
+    exit 2
+fi
+
+source "$CONFIG_FILE"
+
+if [ "x$RS_COOKIE" = "x" ]; then
+    cat <<EOF
+Value of RS_COOKIE is not set in configuration file: $CONFIG_FILE
+Cannot continue operation without this value. Sorry.
+EOF
+
+    exit 2
+fi
+
+# Automatically detect offset to resume download from.
+curl_opts="-C -"
+# Use filename from URL as filename of destination file.
+curl_opts="${curl_opts} -O"
+# Follow HTTP Redirects reported by the server.
+curl_opts="${curl_opts} -L"
+
+if [ "x$socks5_proxy" != "x" ]; then
+    curl_opts="${curl_opts} --socks5 $socks5_proxy"
+fi
+
+if [ "x$rate_limit" != "x" ]; then
+    curl_opts="${curl_opts} --limit-rate $rate_limit"
+fi
+
+grep -v -E '^(\s*$|#)' "$dl_list" | while read url; do \
+    curl ${curl_opts} -b "${RS_COOKIE}" "${url}"
+done
+
+echo "Finished downloading URLs from $dl_list."
+exit 0
