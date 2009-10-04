@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+
+import sys, urllib2
+
+
+URL = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?sub=checkfiles_v1&files=%s&filenames=%s"
+
+F_ID = 0
+F_NAME = 1
+F_SIZE = 2
+
+def process_response(data):
+    unavail = []
+    avail = []
+
+    for line in data.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split(',')
+        if int(parts[F_SIZE]) == 0:
+            unavail.append((parts[F_ID], parts[F_NAME]))
+        else:
+            avail.append((parts[F_ID], parts[F_NAME]))
+
+    if unavail:
+        print 'NOT AVAILABLE FILES'
+        print '==================='
+        print '\n'.join('%s/%s' % (id, name) for id, name in unavail)
+        print '%d of %d files are unavailable' % (len(unavail), len(unavail) + len(avail))
+    else:
+        print 'Lucky you! All files are available. Enjoy.'
+
+
+def main(links_file):
+    files = []
+    filenames = []
+
+    fh = open(links_file, 'rb')
+    for line in fh:
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        parts = line.split('/')
+        files.append(parts[-2])
+        filenames.append(parts[-1])
+    fh.close()
+
+    url = URL % (','.join(files), ','.join(filenames))
+
+    opener = urllib2.build_opener()
+    opener.addheaders = [('User-agent', 'rschk/0.1')]
+    res = opener.open(url)
+    process_response(res.read())
+    
+
+if __name__ == '__main__':
+    main(sys.argv[1])
+
