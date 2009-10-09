@@ -8,6 +8,8 @@ URL = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?sub=checkfiles_v1&files=%s&fi
 F_ID = 0
 F_NAME = 1
 F_SIZE = 2
+F_STATUS = 4
+
 
 def process_response(data):
     unavail = []
@@ -18,9 +20,7 @@ def process_response(data):
         if not line:
             continue
         parts = line.split(',')
-        if int(parts[F_SIZE]) == 0:
-            unavail.append((parts[F_ID], parts[F_NAME]))
-        else:
+        if int(parts[F_STATUS]) in (1, 2, 6):
             avail.append((parts[F_ID], parts[F_NAME]))
 
     if unavail:
