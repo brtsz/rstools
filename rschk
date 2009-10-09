@@ -11,8 +11,11 @@
 
 """
 
+__version__ = '0.3'
 
-import sys, urllib2, pycurl, StringIO
+import optparse, sys, StringIO
+
+import pycurl
 
 
 URL = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?sub=checkfiles_v1&files=%s&filenames=%s"
@@ -62,21 +65,27 @@ def process_response(data):
         return True
 
 
-def fetch_url(url):
-    buf = StringIO.StringIO()
+class RapidClient(object):
+    def __init__(self, proxy_addr=None):
+        self.__proxy_addr = proxy_addr
 
-    curl = pycurl.Curl()
-    curl.setopt(pycurl.URL, url)
-    curl.setopt(pycurl.CONNECTTIMEOUT, 30)
-    curl.setopt(pycurl.TIMEOUT, 300)
-    curl.setopt(pycurl.USERAGENT, 'rschk/0.2')
-    curl.setopt(pycurl.NOSIGNAL, 1)
-    curl.setopt(pycurl.WRITEFUNCTION, buf.write)
-    curl.setopt(pycurl.PROXY, 'localhost:8009')
-    curl.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_SOCKS5)
-    curl.perform()
-    curl.close()
-    return buf.getvalue()
+    def fetch_url(self, url):
+        buf = StringIO.StringIO()
+
+        curl = pycurl.Curl()
+        curl.setopt(pycurl.URL, url)
+        curl.setopt(pycurl.CONNECTTIMEOUT, 30)
+        curl.setopt(pycurl.TIMEOUT, 300)
+        curl.setopt(pycurl.USERAGENT, 'rschk/' + __version__)
+        curl.setopt(pycurl.NOSIGNAL, 1)
+        curl.setopt(pycurl.WRITEFUNCTION, buf.write)
+        if self.__proxy_addr:
+            curl.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_SOCKS5)
+            curl.setopt(pycurl.PROXY, self.__proxy_addr)
+        curl.perform()
+        curl.close()
+
+        return buf.getvalue()
 
 
 def main(links_file, proxy_addr):
@@ -93,9 +102,14 @@ def main(links_file, proxy_addr):
         filenames.append(parts[-1])
     fh.close()
 
+    # 
+    # TODO: Follow quantity limits when constructing this query.
+    #       See RS API spec for details.
+    #
     url = URL % (','.join(files), ','.join(filenames))
 
-    res = fetch_url(url)
+    client = RapidClient(proxy_addr=proxy_addr)
+    res = client.fetch_url(url)
     return not process_response(res)
 
 
