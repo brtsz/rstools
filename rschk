@@ -1,6 +1,18 @@
 #!/usr/bin/env python
+#
+# rschk -- Checks if files are still downloadable via Rapidshare.
+#
+# Copyright (C) 2009  Bartosz Oler <bartosz@bzimage.us>
+#
 
-import sys, urllib2
+
+"""rschk -- Checks if files are still downloadable via Rapidshare.
+
+
+"""
+
+
+import sys, urllib2, pycurl, StringIO
 
 
 URL = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?sub=checkfiles_v1&files=%s&filenames=%s"
@@ -44,8 +56,27 @@ def process_response(data):
             (id, name, STATUSES[r][0]) for id, name, r in unavail)
         print '=' * 74
         print '%d of %d files are unavailable' % (len(unavail), len(unavail) + len(avail))
+        return False
     else:
         print 'Lucky you! All files are available. Enjoy.'
+        return True
+
+
+def fetch_url(url):
+    buf = StringIO.StringIO()
+
+    curl = pycurl.Curl()
+    curl.setopt(pycurl.URL, url)
+    curl.setopt(pycurl.CONNECTTIMEOUT, 30)
+    curl.setopt(pycurl.TIMEOUT, 300)
+    curl.setopt(pycurl.USERAGENT, 'rschk/0.2')
+    curl.setopt(pycurl.NOSIGNAL, 1)
+    curl.setopt(pycurl.WRITEFUNCTION, buf.write)
+    curl.setopt(pycurl.PROXY, 'localhost:8009')
+    curl.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_SOCKS5)
+    curl.perform()
+    curl.close()
+    return buf.getvalue()
 
 
 def main(links_file):
@@ -64,12 +95,11 @@ def main(links_file):
 
     url = URL % (','.join(files), ','.join(filenames))
 
-    opener = urllib2.build_opener()
-    opener.addheaders = [('User-agent', 'rschk/0.1')]
-    res = opener.open(url)
-    process_response(res.read())
-    
+    res = fetch_url(url)
+    return not process_response(res)
+
 
 if __name__ == '__main__':
     main(sys.argv[1])
 
+# vim: set ts=4 sw=4 sts=4 et:
