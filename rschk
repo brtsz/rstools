@@ -100,6 +100,7 @@ def main(links_file):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    sys.exit(main(sys.argv[1]))
+
 
 # vim: set ts=4 sw=4 sts=4 et:
