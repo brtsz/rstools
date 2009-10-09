@@ -77,7 +77,6 @@ class RapidClient(object):
         curl.setopt(pycurl.CONNECTTIMEOUT, 30)
         curl.setopt(pycurl.TIMEOUT, 300)
         curl.setopt(pycurl.USERAGENT, 'rschk/' + __version__)
-        curl.setopt(pycurl.NOSIGNAL, 1)
         curl.setopt(pycurl.WRITEFUNCTION, buf.write)
         if self.__proxy_addr:
             curl.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_SOCKS5)
