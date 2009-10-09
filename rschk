@@ -79,7 +79,7 @@ def fetch_url(url):
     return buf.getvalue()
 
 
-def main(links_file):
+def main(links_file, proxy_addr):
     files = []
     filenames = []
 
@@ -99,8 +99,36 @@ def main(links_file):
     return not process_response(res)
 
 
+def parse_options(argv):
+    usage = "%prog [options] <file>"
+    descr = """\
+Rapidshare links checker. Checks if all URLs from the given file
+are available for download from Rapidshare servers.
+"""
+
+    p = optparse.OptionParser(usage,
+                              version='%prog ' + __version__,
+                              description=descr)
+    p.add_option('--proxy-socks5', metavar='ADDRESS', action='store',
+                 help='Use SOCKS5 proxy at the given address.')
+    p.add_option('--quiet', action='store_true', default=False,
+                 help='Relatively quiet. Display only summary.')
+    p.add_option('--debug', action='store_true', default=False,
+                 help='Debug mode.')
+
+    opts, args = p.parse_args(argv)
+    if len(args) != 1:
+        p.error('You have to specifiy one (and only one) file with URLs to be checked.')
+
+    if opts.quiet:
+        print 'note: Option --quiet is not yet implemented. Sorry.'
+
+    return p, opts, args
+
+
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1]))
+    parser, opts, args = parse_options(sys.argv[1:])
+    sys.exit(main(args[0], opts.proxy_socks5))
 
 
 # vim: set ts=4 sw=4 sts=4 et:
