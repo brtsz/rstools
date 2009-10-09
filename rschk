@@ -5,6 +5,17 @@ import sys, urllib2
 
 URL = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?sub=checkfiles_v1&files=%s&filenames=%s"
 
+# each entry is: (short descr, long descr)
+STATUSES = (
+    ('File not found', 'File not found'),
+    ('OK', 'File OK (Downloading possible without any logging)'),
+	('OK', 'File OK (TrafficShare direct download without any logging)'),
+	('Server down', 'Server down'),
+	('Illegal', 'File marked as illegal'),
+	('Locked', 'Anonymous file locked, because it has more than 10 downloads already'),
+    ('OK', 'File OK (TrafficShare direct download with enabled logging. Read our privacy policy to see what is logged.)')
+)
+
 F_ID = 0
 F_NAME = 1
 F_SIZE = 2
@@ -22,11 +33,16 @@ def process_response(data):
         parts = line.split(',')
         if int(parts[F_STATUS]) in (1, 2, 6):
             avail.append((parts[F_ID], parts[F_NAME]))
+        else:
+            unavail.append((parts[F_ID], parts[F_NAME], int(parts[F_STATUS])))
 
     if unavail:
+        print '=' * 74
         print 'NOT AVAILABLE FILES'
-        print '==================='
-        print '\n'.join('%s/%s' % (id, name) for id, name in unavail)
+        print '=' * 74
+        print '\n'.join('%s/%s\t(reason: %s)' % \
+            (id, name, STATUSES[r][0]) for id, name, r in unavail)
+        print '=' * 74
         print '%d of %d files are unavailable' % (len(unavail), len(unavail) + len(avail))
     else:
         print 'Lucky you! All files are available. Enjoy.'
