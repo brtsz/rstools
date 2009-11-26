@@ -34,8 +34,15 @@ STATUSES = (
 F_ID = 0
 F_NAME = 1
 F_SIZE = 2
+F_SERVER_ID = 3
 F_STATUS = 4
+F_SHORT_HOST = 5
 
+
+def _mirror_url(reply):
+    return 'http://rs%s%s.rapidshare.com/files/%s/%s' % (
+        reply[F_SERVER_ID], reply[F_SHORT_HOST], reply[F_ID], reply[F_NAME],
+    )
 
 def process_response(data):
     unavail = []
@@ -47,7 +54,7 @@ def process_response(data):
             continue
         parts = line.split(',')
         if int(parts[F_STATUS]) in (1, 2, 6):
-            avail.append((parts[F_ID], parts[F_NAME]))
+            avail.append((parts[F_ID], parts[F_NAME], _mirror_url(parts)))
         else:
             unavail.append((parts[F_ID], parts[F_NAME], int(parts[F_STATUS])))
 
@@ -62,6 +69,8 @@ def process_response(data):
         return False
     else:
         print 'Lucky you! All files are available. Enjoy.'
+        print 'Below are the direct links to those files.'
+        print '\n'.join(url for _, _, url in avail)
         return True
 
 
